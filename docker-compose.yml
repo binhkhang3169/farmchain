@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  db:
+    image: postgis/postgis
+    container_name: agri-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agri
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+  server:
+    build:
+      context: ./server
+    container_name: go-server
+    environment:
+      - DB_HOST=db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=agri
+      - DB_PORT=5432
+    depends_on:
+      - db
+      - flask-predictor
+    ports:
+      - "8080:8080"
+    restart: always
+
+  flask-predictor:
+    build:
+      context: ./flask_predictor
+    container_name: flask-predictor
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./flask_predictor/data:/app/data
+      - ./flask_predictor/model:/app/model
+    restart: always
+  
+volumes:
+  pgdata:
